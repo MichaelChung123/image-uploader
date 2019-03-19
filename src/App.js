@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import ImageUploader from './ImageUploader';
 
 class App extends Component {
 
@@ -34,7 +35,7 @@ class App extends Component {
             Edit <code>src/App.js</code> and save to reload.
           </p>
 
-          <form onSubmit={this.handleSubmit}>
+          {/* <form onSubmit={this.handleSubmit}>
             <label htmlFor="name">Enter your name: </label>
             <input
               id="name"
@@ -44,7 +45,9 @@ class App extends Component {
             />
             <button type="submit">Submit</button>
           </form>
-          <p>{this.state.greeting}</p>
+          <p>{this.state.greeting}</p> */}
+
+          <ImageUploader />
 
           <a
             className="App-link"
