@@ -4,6 +4,8 @@
   "private": true,
   "proxy": "http://localhost:3001",
   "dependencies": {
+    "mongodb": "^2.2.36",
+    "mongoose": "^5.4.19",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "react-scripts": "2.1.8"
