@@ -12,10 +12,10 @@ class ImageUploader extends Component {
   }
 
   fileSelectedHandler = (event) => {
-    // console.log(event.target.files[0]);
-    this.setState({
-      selectedFile: event.target.files[0]
-    });
+    console.log(event.target.files[0]);
+    // this.setState({
+    //   selectedFile: event.target.files[0]
+    // });
   }
 
   fileUploadHandler = () => {
