@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import axios from 'axios';
 
 class ImageUploader extends Component {
 
@@ -7,26 +8,41 @@ class ImageUploader extends Component {
     super(props);
 
     this.state = {
-      selectedFile: null
+      file: null
     }
   }
 
-  fileSelectedHandler = (event) => {
-    console.log(event.target.files[0]);
-    // this.setState({
-    //   selectedFile: event.target.files[0]
-    // });
+  submitFile = (event) => {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('file', this.state.file[0]);
+    axios.post(`/test-upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }).then(response => {
+      // handle your response;
+      console.log("Submit:", response);
+    }).catch(error => {
+      // handle your error
+      console.log(error);
+    });
+
+    // axios.get();
   }
 
-  fileUploadHandler = () => {
-
+  handleFileUpload = (event) => {
+    this.setState({ file: event.target.files });
   }
+
 
   render() {
     return (
       <div className="uploader">
-        <input type="file" onChange={this.fileSelectedHandler} />
-        <button onClick={this.fileUploadHandler}>Upload</button>
+        <form onSubmit={this.submitFile}>
+          <input type="file" label='upload file' onChange={this.handleFileUpload} />
+          <button type='submit'>Upload</button>
+        </form>
       </div>
     );
   }

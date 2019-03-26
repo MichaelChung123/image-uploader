@@ -4,12 +4,23 @@
   "private": true,
   "proxy": "http://localhost:3001",
   "dependencies": {
+    "aws-sdk": "^2.428.0",
+    "axios": "^0.18.0",
+    "bluebird": "^3.5.3",
+    "dot-env": "0.0.1",
+    "dotenv": "^7.0.0",
+    "file-type": "^10.9.0",
+    "fs": "0.0.1-security",
     "mongodb": "^2.2.36",
     "mongoose": "^5.4.19",
+    "multiparty": "^4.2.1",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
-    "react-scripts": "2.1.8"
+    "react-scripts": "2.1.8",
+    "uuid": "^3.3.2"
   },
+  "description": "A simple Node.js application illustrating usage of the AWS SDK for Node.js.",
+  "main": "sample.js",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
