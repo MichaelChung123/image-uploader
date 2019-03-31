@@ -13,6 +13,7 @@ class ImageUploader extends Component {
   }
 
   submitFile = (event) => {
+
     event.preventDefault();
     const formData = new FormData();
     formData.append('file', this.state.file[0]);
@@ -28,7 +29,6 @@ class ImageUploader extends Component {
       console.log(error);
     });
 
-    // axios.get();
   }
 
   handleFileUpload = (event) => {

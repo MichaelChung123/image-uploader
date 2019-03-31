@@ -9,6 +9,9 @@ const fileType = require('file-type');
 const bluebird = require('bluebird');
 const multiparty = require('multiparty');
 
+const assert = require('assert');
+const MongoClient = require('mongodb').MongoClient;
+const MONGODB_URI = 'mongodb://localhost:27017/images';
 require('dotenv').config();
 
 // // configure the keys for accessing AWS
@@ -47,27 +50,114 @@ app.post('/test-upload', (request, response) => {
       const data = await uploadFile(buffer, fileName, type);
 
       return response.status(200).send(data);
+
     } catch (error) {
       return response.status(400).send(error);
     }
   });
 });
 
-let bucketParams = {
-  Bucket: 'imageupload-media'
-};
+function listBuckets() {
+  let bucketParams = {
+    Bucket: process.env.S3_BUCKET
+  };
 
-s3.listObjects(bucketParams, function(err, data) {
-  if(err) {
-    console.log("error", err);
-  } else {
-    console.log("Success", data);
-  }
-});
+  s3.listObjects(bucketParams, function (err, data) {
+    if (err) {
+      console.log("error", err);
+    } else {
+      MongoClient.connect(MONGODB_URI, (err, db) => {
+        if (err) {
+          console.log(`Failed to connect to: ${MONGODB_URI}`);
+          throw err;
+        }
+        
+        function insertImageUrl() {
+          for (let content of data.Contents) {
+            let objectUrl = `https://s3-us-west-2.amazonaws.com/${data.Name}/${content.Key}`;
 
-app.get('test-upload', (request, response) => {
+            db.collection("test").find().toArray((err, images) => {
+              let duplicate = false;
+              if (err) {
+                return err;
+              }
+              for (let image of images) {
+                if (objectUrl === image.URL) {
+                  duplicate = true;
+                }
+              }
+              if (!duplicate) {
+                db.collection("test").insertOne({
+                  URL: objectUrl
+                });
+              }
 
-});
+              duplicate = false;
+            });
+          }
+        }
+
+        function getImages(callback) {
+          db.collection("test").find().toArray((err, images) => {
+            if (err) {
+              return callback(err);
+            }
+            callback(null, images);
+          });
+        }
+
+        insertImageUrl();
+        getImages((err, images) => {
+          if (err) {
+            throw err;
+          }
+
+          console.log("logging each image: ");
+          for (let image of images) {
+            console.log(image);
+          }
+
+          db.close();
+        });
+      });
+
+    }
+  });
+}
+
+listBuckets();
+
+// MongoClient.connect(MONGODB_URI, (err, db) => {
+//   if (err) {
+//     console.error(`Failed to connect: ${MONGODB_URI}`);
+//     throw err;
+//   }
+
+//   console.log(`Connected to mongodb: ${MONGODB_URI}`);
+
+//   function getImages(callback) {
+//     db.collection("test").find().toArray((err, images) => {
+//       if (err) {
+//         return callback(err);
+//       }
+//       callback(null, images);
+//     });
+//   }
+
+//   getImages((err, images) => {
+//     if (err) {
+//       throw err;
+//     }
+
+//     console.log("logging each image: ");
+//     for (let image of images) {
+//       console.log(image);
+//     }
+
+//     db.close();
+//   });
+
+// });
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(pino);
