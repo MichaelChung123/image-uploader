@@ -1,24 +1,22 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const pino = require('express-pino-logger')();
-
 const app = express();
 const AWS = require('aws-sdk');
 const fs = require('fs');
 const fileType = require('file-type');
 const bluebird = require('bluebird');
 const multiparty = require('multiparty');
-
 const assert = require('assert');
 const MongoClient = require('mongodb').MongoClient;
 const MONGODB_URI = 'mongodb://localhost:27017/images';
 require('dotenv').config();
 
+// Opening the conncetion to the mongo db
 MongoClient.connect(MONGODB_URI, (err, db) => {
   if (err) {
     console.log(`Failed to connect to: ${MONGODB_URI}`);
     throw err;
   }
+
   // // configure the keys for accessing AWS
   // AWS.config.update({
   //   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -40,9 +38,10 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
     return s3.upload(params).promise();
   }
 
-  app.post('/test-upload', (request, response) => {
+  // POST request that takes file uploaded from client and adds it to the specified S3 location
+  app.post('/test-upload', (req, res) => {
     const form = new multiparty.Form();
-    form.parse(request, async (error, fields, files) => {
+    form.parse(req, async (error, fields, files) => {
       if (error) throw new Error(error);
       try {
         console.log("Posting to ", process.env.S3_BUCKET);
@@ -54,27 +53,26 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
         const fileName = `bucketFolder/${timestamp}-lg`;
         const data = await uploadFile(buffer, fileName, type);
 
-        return response.status(200).send(data);
-
+        return res.status(200).send(data);
       } catch (error) {
-        return response.status(400).send(error);
+        return res.status(400).send(error);
       }
     });
-
   });
 
   let bucketParams = {
     Bucket: process.env.S3_BUCKET
   };
 
+  // Gets all objects in specified S3 location
   s3.listObjects(bucketParams, function (err, data) {
     if (err) {
       console.log("error", err);
     } else {
-
       for (let content of data.Contents) {
         let objectUrl = `https://s3-us-west-2.amazonaws.com/${data.Name}/${content.Key}`;
 
+        // Puts all S3 objects into the mongodb and filters out duplicates
         db.collection("test").find().toArray((err, images) => {
           let duplicate = false;
           if (err) {
@@ -94,11 +92,11 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
         });
       }
 
+      // Lists all objects in the database
       db.collection("test").find().toArray((err, images) => {
         if (err) {
           return err;
         }
-
         console.log("logging each image: ");
         for (let image of images) {
           console.log(image);
@@ -107,33 +105,15 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
     }
   });
 
-
-
+  // GET request sending image data to client
   app.get('/getUrls', (req, res) => {
-    MongoClient.connect(MONGODB_URI, (err, db) => {
+    db.collection("test").find().toArray((err, images) => {
       if (err) {
-        console.log(`Failed to connect to: ${MONGODB_URI}`);
-        throw err;
+        return res.status(400);
       }
-
-      db.collection("test").find().toArray((err, images) => {
-        if (err) {
-          return res.status(400);
-        }
-
-        return res.status(200).send(images);
-        console.log("Sending images from server.");
-      });
+      return res.status(200).send(images);
+      console.log("Sending images from server.");
     });
-  });
-
-  app.use(bodyParser.urlencoded({ extended: false }));
-  app.use(pino);
-
-  app.get('/api/greeting', (req, res) => {
-    const name = req.query.name || 'World';
-    res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify({ greeting: `Hello ${name}!` }));
   });
 
   app.listen(3001, () =>
