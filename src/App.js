@@ -31,6 +31,10 @@ class App extends Component {
   }
 
   componentDidMount() {
+    this.getUrls();
+  }
+
+  getUrls = () => {
     axios.get('/getUrls')
       .then(res => {
         const imagesArray = res.data;
@@ -54,7 +58,7 @@ class App extends Component {
           <p>Amazon S3 Uploaded Images</p>
           {!this.state.imagesLoaded && <p>Loading Images...</p>}
           {this.state.imagesLoaded && <DisplayImages images={this.state.images} />}
-          <ImageUploader />
+          <ImageUploader getUrls={ this.getUrls } />
 
           {/* <a
             className="App-link"

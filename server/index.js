@@ -27,6 +27,55 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
 
   const s3 = new AWS.S3();
 
+  function handleS3Obj() {
+    let bucketParams = {
+      Bucket: process.env.S3_BUCKET
+    };
+
+    // Gets all objects in specified S3 location
+    s3.listObjects(bucketParams, function (err, data) {
+      if (err) {
+        console.log("error", err);
+      } else {
+        for (let content of data.Contents) {
+          let objectUrl = `https://s3-us-west-2.amazonaws.com/${data.Name}/${content.Key}`;
+
+          // Puts all S3 objects into the mongodb and filters out duplicates
+          db.collection("test").find().toArray((err, images) => {
+            let duplicate = false;
+            if (err) {
+              return err;
+            }
+            for (let image of images) {
+              if (objectUrl === image.URL) {
+                duplicate = true;
+              }
+            }
+            if (!duplicate) {
+              db.collection("test").insertOne({
+                URL: objectUrl
+              });
+            }
+            duplicate = false;
+          });
+        }
+
+        // Lists all objects in the database
+        db.collection("test").find().toArray((err, images) => {
+          if (err) {
+            return err;
+          }
+          console.log("logging each image: ");
+          for (let image of images) {
+            console.log(image);
+          }
+        });
+      }
+    });
+  }
+
+  handleS3Obj();
+
   const uploadFile = (buffer, name, type) => {
     const params = {
       ACL: 'public-read',
@@ -39,9 +88,9 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
   }
 
   // POST request that takes file uploaded from client and adds it to the specified S3 location
-  app.post('/test-upload', (req, res) => {
+  app.post('/test-upload', /*async*/(req, res) => {
     const form = new multiparty.Form();
-    form.parse(req, async (error, fields, files) => {
+    form.parse(req, (error, fields, files) => {
       if (error) throw new Error(error);
       try {
         console.log("Posting to ", process.env.S3_BUCKET);
@@ -51,58 +100,16 @@ MongoClient.connect(MONGODB_URI, (err, db) => {
         const type = fileType(buffer);
         const timestamp = Date.now().toString();
         const fileName = `bucketFolder/${timestamp}-lg`;
-        const data = await uploadFile(buffer, fileName, type);
-
-        return res.status(200).send(data);
+        // const data = await uploadFile(buffer, fileName, type);
+        uploadFile(buffer, fileName, type)
+          .then((data) => {
+            handleS3Obj();
+            return res.status(200).send(data);
+          });
       } catch (error) {
         return res.status(400).send(error);
       }
     });
-  });
-
-  let bucketParams = {
-    Bucket: process.env.S3_BUCKET
-  };
-
-  // Gets all objects in specified S3 location
-  s3.listObjects(bucketParams, function (err, data) {
-    if (err) {
-      console.log("error", err);
-    } else {
-      for (let content of data.Contents) {
-        let objectUrl = `https://s3-us-west-2.amazonaws.com/${data.Name}/${content.Key}`;
-
-        // Puts all S3 objects into the mongodb and filters out duplicates
-        db.collection("test").find().toArray((err, images) => {
-          let duplicate = false;
-          if (err) {
-            return err;
-          }
-          for (let image of images) {
-            if (objectUrl === image.URL) {
-              duplicate = true;
-            }
-          }
-          if (!duplicate) {
-            db.collection("test").insertOne({
-              URL: objectUrl
-            });
-          }
-          duplicate = false;
-        });
-      }
-
-      // Lists all objects in the database
-      db.collection("test").find().toArray((err, images) => {
-        if (err) {
-          return err;
-        }
-        console.log("logging each image: ");
-        for (let image of images) {
-          console.log(image);
-        }
-      });
-    }
   });
 
   // GET request sending image data to client

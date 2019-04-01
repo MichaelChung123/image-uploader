@@ -22,11 +22,9 @@ class ImageUploader extends Component {
         'Content-Type': 'multipart/form-data'
       }
     }).then(response => {
-      // handle your response;
-      // console.log("Submit:", response);
       window.alert("File Uploaded!");
+      this.props.getUrls();
     }).catch(error => {
-      // handle your error
       console.log(error);
     });
 
