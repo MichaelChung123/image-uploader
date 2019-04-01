@@ -1,16 +1,20 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
 import ImageUploader from './ImageUploader';
+import DisplayImages from './DisplayImages';
+import axios from 'axios';
 
 class App extends Component {
 
   constructor(props) {
     super(props);
+
     this.state = {
       name: '',
-      greeting: ''
+      greeting: '',
+      images: [],
+      imagesLoaded: false
     };
+
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
@@ -26,37 +30,40 @@ class App extends Component {
       .then(state => this.setState(state));
   }
 
+  componentDidMount() {
+    axios.get('/getUrls')
+      .then(res => {
+        const imagesArray = res.data;
+        this.setState( {
+          images: imagesArray,
+          imagesLoaded: true
+        });
+      });
+  }
+
+
   render() {
     return (
       <div className="App">
         <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
+          {/* <img src={logo} className="App-logo" alt="logo" />
           <p>
             Edit <code>src/App.js</code> and save to reload.
-          </p>
+          </p> */}
 
-          {/* <form onSubmit={this.handleSubmit}>
-            <label htmlFor="name">Enter your name: </label>
-            <input
-              id="name"
-              type="text"
-              value={this.state.name}
-              onChange={this.handleChange}
-            />
-            <button type="submit">Submit</button>
-          </form>
-          <p>{this.state.greeting}</p> */}
-
+          <p>Amazon S3 Uploaded Images</p>
+          {!this.state.imagesLoaded && <p>Loading Images...</p>}
+          {this.state.imagesLoaded && <DisplayImages images={this.state.images} />}
           <ImageUploader />
 
-          <a
+          {/* <a
             className="App-link"
             href="https://reactjs.org"
             target="_blank"
             rel="noopener noreferrer"
           >
             Learn React
-          </a>
+          </a> */}
         </header>
       </div>
     );

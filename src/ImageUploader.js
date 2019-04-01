@@ -23,7 +23,8 @@ class ImageUploader extends Component {
       }
     }).then(response => {
       // handle your response;
-      console.log("Submit:", response);
+      // console.log("Submit:", response);
+      window.alert("File Uploaded!");
     }).catch(error => {
       // handle your error
       console.log(error);
